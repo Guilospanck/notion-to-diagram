@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { renderLinkedText } from '@/lib/renderLinks';
 
 type CustomNodeData = {
   label: string;
@@ -40,7 +41,7 @@ function CustomNode({ data }: NodeProps) {
       style={{ maxWidth: 260, minWidth: 120 }}
     >
       <Handle type="target" position={Position.Top} className="!bg-gray-400" />
-      <div className="leading-tight">{label}</div>
+      <div className="leading-tight">{renderLinkedText(label, { stopPropagation: true, className: 'underline cursor-pointer' })}</div>
       {preview && nodeType !== 'topic' && (
         <div className="mt-1 opacity-60 text-[10px] leading-snug line-clamp-2">
           {preview}
