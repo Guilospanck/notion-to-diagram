@@ -13,8 +13,8 @@ type CustomNodeData = {
 
 const typeStyles = {
   topic: 'bg-blue-600 text-white border-blue-700 text-sm font-semibold',
-  subtopic: 'bg-blue-100 text-blue-900 border-blue-300 text-xs font-medium',
-  detail: 'bg-gray-50 text-gray-700 border-gray-300 text-xs',
+  subtopic: 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700 text-xs font-medium',
+  detail: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 text-xs',
 };
 
 function contentPreview(content: string): string {
@@ -36,7 +36,7 @@ function CustomNode({ data }: NodeProps) {
     <div
       className={`px-3 py-2 rounded-lg border-2 shadow-sm cursor-pointer
         hover:shadow-md transition-all ${style}
-        ${selected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-105' : ''}`}
+        ${selected ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-950 shadow-lg scale-105' : ''}`}
       style={{ maxWidth: 260, minWidth: 120 }}
     >
       <Handle type="target" position={Position.Top} className="!bg-gray-400" />

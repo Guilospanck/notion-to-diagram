@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import InputForm from '@/components/InputForm';
+import ThemeToggle from '@/components/ThemeToggle';
 import type { DiagramData } from '@/types';
 
 const DiagramCanvas = dynamic(() => import('@/components/DiagramCanvas'), {
@@ -108,14 +109,17 @@ export default function Home() {
   if (diagramData) {
     return (
       <div className="w-screen h-screen flex flex-col">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white">
-          <h1 className="text-sm font-semibold text-gray-700">Notion to Diagram</h1>
-          <button
-            onClick={() => setDiagramData(null)}
-            className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50 text-gray-600"
-          >
-            Back
-          </button>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <h1 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Notion to Diagram</h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setDiagramData(null)}
+              className="px-3 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+            >
+              Back
+            </button>
+          </div>
         </div>
         <div className="flex-1">
           <DiagramCanvas diagramData={diagramData} />
@@ -125,37 +129,40 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-4 py-12 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Notion to Diagram</h1>
-        <p className="text-gray-500 text-sm max-w-md">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Notion to Diagram</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
           Transform your Notion pages into interactive diagrams. Paste a page URL and your integration token to get started.
         </p>
       </div>
       <InputForm onSubmit={handleSubmit} isLoading={isLoading} loadingStep={loadingStep} />
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm max-w-lg">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm max-w-lg">
           {error}
         </div>
       )}
 
       {savedDiagrams.length > 0 && (
         <div className="mt-10 w-full max-w-lg">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Saved Diagrams</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Saved Diagrams</h2>
           <ul className="space-y-2">
             {savedDiagrams.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
               >
                 <button
                   onClick={() => setDiagramData(d.data)}
                   className="flex-1 text-left min-w-0"
                 >
-                  <span className="text-sm font-medium text-gray-900 truncate block">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
                     {d.title}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {new Date(d.createdAt).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -167,7 +174,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => deleteDiagram(d.id)}
-                  className="ml-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                  className="ml-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                   title="Delete"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

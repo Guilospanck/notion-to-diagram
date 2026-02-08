@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -9,6 +9,7 @@ import {
   useNodesState,
   useEdgesState,
   type Node,
+  type ColorMode,
   ReactFlowProvider,
   useReactFlow,
 } from '@xyflow/react';
@@ -22,8 +23,41 @@ import type { DiagramData } from '@/types';
 
 const nodeTypes = { custom: CustomNode };
 
+function useColorMode(): ColorMode {
+  const [colorMode, setColorMode] = useState<ColorMode>(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setColorMode(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return colorMode;
+}
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  return isMobile;
+}
+
 function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
   const { fitView, setCenter, getNode } = useReactFlow();
+  const colorMode = useColorMode();
+  const isMobile = useIsMobile();
 
   const initialLayout = useMemo(
     () => layoutDiagram(diagramData, 'TB'),
@@ -37,7 +71,7 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
     title: string;
     content: string;
   } | null>(null);
-  const [showMinimap, setShowMinimap] = useState(true);
+  const [showMinimap, setShowMinimap] = useState(!isMobile);
 
   const selectNode = useCallback((nodeId: string) => {
     const rfNode = getNode(nodeId);
@@ -91,6 +125,7 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        colorMode={colorMode}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}

@@ -22,7 +22,7 @@ export default function InputForm({ onSubmit, isLoading, loadingStep }: InputFor
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4">
       <div>
-        <label htmlFor="pageUrl" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="pageUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Notion Page URL
         </label>
         <input
@@ -31,12 +31,12 @@ export default function InputForm({ onSubmit, isLoading, loadingStep }: InputFor
           value={pageUrl}
           onChange={(e) => setPageUrl(e.target.value)}
           placeholder="https://www.notion.so/Your-Page-abc123..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
           disabled={isLoading}
         />
       </div>
       <div>
-        <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Integration Token
         </label>
         <input
@@ -45,7 +45,7 @@ export default function InputForm({ onSubmit, isLoading, loadingStep }: InputFor
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="ntn_..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
           disabled={isLoading}
         />
       </div>
