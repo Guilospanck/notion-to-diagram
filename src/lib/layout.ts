@@ -9,6 +9,7 @@ const NODE_DIMENSIONS: Record<DiagramNodeType, { width: number; height: number }
 
 const H_GAP = 50;
 const V_GAP = 60;
+const RING_GAP = 200;
 
 export interface LayoutResult {
   nodes: Node[];
@@ -80,26 +81,191 @@ function collectNodes(tree: TreeNode, nodeMap: Map<string, { x: number; y: numbe
   }
 }
 
-export function layoutDiagram(
-  data: DiagramData,
-  direction: 'TB' | 'LR' = 'TB',
-): LayoutResult {
-  const isHorizontal = direction === 'LR';
-  const trees = buildTree(data);
+export type LayoutDirection = 'TB' | 'LR' | 'RADIAL';
 
-  let offsetX = 0;
-  for (const tree of trees) {
-    positionTree(tree, offsetX, 0);
-    offsetX += tree.subtreeWidth + H_GAP * 2;
+/** Map an angle (radians) to the nearest cardinal Position. */
+function angleToPosition(angle: number): Position {
+  // Normalize to [0, 2π)
+  const a = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  // Quadrants: right=[−π/4,π/4], bottom=[π/4,3π/4], left=[3π/4,5π/4], top=[5π/4,7π/4]
+  if (a < Math.PI / 4 || a >= (7 * Math.PI) / 4) return Position.Right;
+  if (a < (3 * Math.PI) / 4) return Position.Bottom;
+  if (a < (5 * Math.PI) / 4) return Position.Left;
+  return Position.Top;
+}
+
+interface RadialNodeInfo {
+  x: number;
+  y: number;
+  sourcePos: Position;
+  targetPos: Position;
+}
+
+const NODE_PAD = 40;
+
+interface SubtreeInfo {
+  node: TreeNode;
+  minAngle: number;
+  children: SubtreeInfo[];
+}
+
+/**
+ * Bottom-up pass: compute the minimum angular width each subtree needs
+ * so that no two nodes at the same depth overlap.
+ * For a leaf at depth d: minAngle = (nodeDiagonal + padding) / radius
+ * For an internal node: max(self minAngle, sum of children minAngles)
+ */
+function computeMinAngles(
+  node: TreeNode,
+  depth: number,
+  ringGap: number,
+): SubtreeInfo {
+  const nodeDim = Math.max(node.width, node.height);
+  const radius = Math.max(depth, 1) * ringGap;
+  const selfMinAngle = depth === 0 ? 0 : (nodeDim + NODE_PAD) / radius;
+
+  const childInfos = node.children.map((c) =>
+    computeMinAngles(c, depth + 1, ringGap),
+  );
+  const childrenMinAngle = childInfos.reduce((sum, c) => sum + c.minAngle, 0);
+
+  return {
+    node,
+    minAngle: Math.max(selfMinAngle, childrenMinAngle),
+    children: childInfos,
+  };
+}
+
+/**
+ * Position nodes radially: root at center, children in concentric rings.
+ * Angular allocation is based on minimum-width requirements so nodes
+ * never overlap. Ring gap is scaled up automatically if the tree is too wide.
+ */
+function layoutRadial(trees: TreeNode[]): Map<string, RadialNodeInfo> {
+  const result = new Map<string, RadialNodeInfo>();
+
+  // Step 1: compute min angles with base RING_GAP
+  let ringGap = RING_GAP;
+  let infos = trees.map((t) => computeMinAngles(t, 0, ringGap));
+  let totalMin = infos.reduce((sum, s) => sum + Math.max(s.minAngle, 0.1), 0);
+
+  // Step 2: if it doesn't fit in a full circle, scale ring gap up
+  if (totalMin > 2 * Math.PI) {
+    ringGap = ringGap * (totalMin / (2 * Math.PI));
+    infos = trees.map((t) => computeMinAngles(t, 0, ringGap));
+    totalMin = infos.reduce((sum, s) => sum + Math.max(s.minAngle, 0.1), 0);
   }
 
-  const positions = new Map<string, { x: number; y: number }>();
-  for (const tree of trees) {
-    collectNodes(tree, positions);
+  // Step 3: top-down placement using minAngle proportions
+  function placeSubtree(
+    info: SubtreeInfo,
+    depth: number,
+    startAngle: number,
+    endAngle: number,
+  ) {
+    const midAngle = (startAngle + endAngle) / 2;
+
+    if (depth === 0) {
+      result.set(info.node.id, {
+        x: 0,
+        y: 0,
+        sourcePos: Position.Bottom,
+        targetPos: Position.Top,
+      });
+    } else {
+      const radius = depth * ringGap;
+      const x = radius * Math.cos(midAngle);
+      const y = radius * Math.sin(midAngle);
+      const targetPos = angleToPosition(midAngle + Math.PI);
+      const sourcePos = angleToPosition(midAngle);
+      result.set(info.node.id, { x, y, sourcePos, targetPos });
+    }
+
+    if (info.children.length === 0) return;
+
+    const totalChildMin = info.children.reduce(
+      (sum, c) => sum + c.minAngle,
+      0,
+    );
+    const angleSpan = endAngle - startAngle;
+    let currentAngle = startAngle;
+
+    for (const child of info.children) {
+      const childSpan =
+        totalChildMin > 0
+          ? (child.minAngle / totalChildMin) * angleSpan
+          : angleSpan / info.children.length;
+      placeSubtree(child, depth + 1, currentAngle, currentAngle + childSpan);
+      currentAngle += childSpan;
+    }
+  }
+
+  if (infos.length === 1) {
+    placeSubtree(infos[0], 0, 0, 2 * Math.PI);
+  } else {
+    let currentAngle = 0;
+    for (const info of infos) {
+      const span = (Math.max(info.minAngle, 0.1) / totalMin) * 2 * Math.PI;
+      placeSubtree(info, 0, currentAngle, currentAngle + span);
+      currentAngle += span;
+    }
+  }
+
+  return result;
+}
+
+export function layoutDiagram(
+  data: DiagramData,
+  direction: LayoutDirection = 'TB',
+): LayoutResult {
+  const isHorizontal = direction === 'LR';
+  const isRadial = direction === 'RADIAL';
+  const trees = buildTree(data);
+
+  let radialPositions: Map<string, RadialNodeInfo> | null = null;
+
+  if (isRadial) {
+    radialPositions = layoutRadial(trees);
+  } else {
+    let offsetX = 0;
+    for (const tree of trees) {
+      positionTree(tree, offsetX, 0);
+      offsetX += tree.subtreeWidth + H_GAP * 2;
+    }
+  }
+
+  const treePositions = new Map<string, { x: number; y: number }>();
+  if (!isRadial) {
+    for (const tree of trees) {
+      collectNodes(tree, treePositions);
+    }
   }
 
   const nodes: Node[] = data.nodes.map((node) => {
-    const pos = positions.get(node.id) || { x: 0, y: 0 };
+    if (isRadial && radialPositions) {
+      const info = radialPositions.get(node.id) || {
+        x: 0, y: 0, sourcePos: Position.Bottom, targetPos: Position.Top,
+      };
+      return {
+        id: node.id,
+        type: 'custom',
+        position: { x: info.x, y: info.y },
+        data: {
+          label: node.label,
+          fullContent: node.fullContent,
+          nodeType: node.type,
+          hasChildren: data.edges.some(
+            (e) => e.source === node.id && e.type === 'hierarchy',
+          ),
+          sourcePos: info.sourcePos,
+          targetPos: info.targetPos,
+        },
+        sourcePosition: info.sourcePos,
+        targetPosition: info.targetPos,
+      };
+    }
+
+    const pos = treePositions.get(node.id) || { x: 0, y: 0 };
     return {
       id: node.id,
       type: 'custom',
@@ -111,6 +277,8 @@ export function layoutDiagram(
         hasChildren: data.edges.some(
           (e) => e.source === node.id && e.type === 'hierarchy',
         ),
+        sourcePos: isHorizontal ? Position.Right : Position.Bottom,
+        targetPos: isHorizontal ? Position.Left : Position.Top,
       },
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,

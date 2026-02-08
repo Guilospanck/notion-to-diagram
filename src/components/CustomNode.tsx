@@ -10,6 +10,8 @@ type CustomNodeData = {
   nodeType: 'topic' | 'subtopic' | 'detail';
   hasChildren: boolean;
   selected: boolean;
+  sourcePos?: Position;
+  targetPos?: Position;
 };
 
 const typeStyles = {
@@ -29,7 +31,7 @@ function contentPreview(content: string): string {
 }
 
 function CustomNode({ data }: NodeProps) {
-  const { label, fullContent, nodeType, selected } = data as unknown as CustomNodeData;
+  const { label, fullContent, nodeType, selected, sourcePos, targetPos } = data as unknown as CustomNodeData;
   const style = typeStyles[nodeType] || typeStyles.detail;
   const preview = contentPreview(fullContent);
 
@@ -40,14 +42,14 @@ function CustomNode({ data }: NodeProps) {
         ${selected ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-950 shadow-lg scale-105' : ''}`}
       style={{ maxWidth: 260, minWidth: 120 }}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400" />
+      <Handle type="target" position={targetPos ?? Position.Top} className="!bg-gray-400" />
       <div className="leading-tight">{renderLinkedText(label, { stopPropagation: true, className: 'underline cursor-pointer' })}</div>
       {preview && nodeType !== 'topic' && (
         <div className="mt-1 opacity-60 text-[10px] leading-snug line-clamp-2">
           {preview}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400" />
+      <Handle type="source" position={sourcePos ?? Position.Bottom} className="!bg-gray-400" />
     </div>
   );
 }

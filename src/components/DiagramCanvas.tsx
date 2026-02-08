@@ -18,7 +18,7 @@ import '@xyflow/react/dist/style.css';
 import CustomNode from './CustomNode';
 import DetailPanel from './DetailPanel';
 import Toolbar from './Toolbar';
-import { layoutDiagram } from '@/lib/layout';
+import { layoutDiagram, type LayoutDirection } from '@/lib/layout';
 import type { DiagramData } from '@/types';
 
 const nodeTypes = { custom: CustomNode };
@@ -97,7 +97,7 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
   }, []);
 
   const onRelayout = useCallback(
-    (direction: 'TB' | 'LR') => {
+    (direction: LayoutDirection) => {
       const result = layoutDiagram(diagramData, direction);
       setNodes(result.nodes);
       setEdges(result.edges);
