@@ -11,6 +11,14 @@ Notion content is fetched at build time and baked into the static output as a JS
 - Node.js 20+
 - A [Notion integration token](https://www.notion.so/my-integrations) and a page ID (optional for dev, required for build with data)
 
+### Environment setup
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your Notion integration token and page ID. See `.env.example` for all available variables.
+
 ### Development
 
 ```bash
@@ -23,10 +31,10 @@ Opens at http://localhost:5173. Without Notion credentials, the app loads but sh
 ### Building with Notion data
 
 ```bash
-NOTION_TOKEN=secret_xxx NOTION_PAGE_ID=your-page-id npm run build
+npm run build
 ```
 
-This runs the prebuild script to fetch your Notion page, then builds the static site into `dist/`.
+This runs the prebuild script (which reads `NOTION_TOKEN` and `NOTION_PAGE_ID` from your `.env`), then builds the static site into `dist/`.
 
 ### Preview
 

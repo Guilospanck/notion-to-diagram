@@ -1,8 +1,22 @@
 import { createNotionClient } from '../src/lib/notion';
 import { normalizeNotionPage } from '../src/lib/normalizer';
 import { generateDiagram } from '../src/lib/diagram';
-import { writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+
+// Load .env file if it exists (for local dev; CI sets env vars directly)
+const envPath = join(process.cwd(), '.env');
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim();
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
 
 const token = process.env.NOTION_TOKEN;
 const pageId = process.env.NOTION_PAGE_ID;
