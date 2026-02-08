@@ -37,13 +37,3 @@ export interface DiagramData {
   edges: DiagramEdge[];
 }
 
-// --- API request/response types ---
-
-export interface NotionFetchRequest {
-  pageUrl: string;
-  token: string;
-}
-
-export interface GenerateRequest {
-  tree: NotionTree;
-}

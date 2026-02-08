@@ -17,8 +17,14 @@
 /.next/
 /out/
 
+# vite
+/dist
+
 # production
 /build
+
+# generated at build time
+/public/diagram-data.json
 
 # misc
 .DS_Store

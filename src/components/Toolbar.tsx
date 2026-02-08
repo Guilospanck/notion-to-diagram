@@ -1,5 +1,3 @@
-'use client';
-
 import type { LayoutDirection } from '@/lib/layout';
 
 interface ToolbarProps {
@@ -24,8 +22,8 @@ export default function Toolbar({
       <button className={showMinimap ? activeBtn : btn} onClick={onToggleMinimap}>
         Minimap
       </button>
-      <button className={btn} onClick={() => onRelayout('TB')}>Vertical</button>
-      <button className={btn} onClick={() => onRelayout('LR')}>Horizontal</button>
+      <button className={btn} onClick={() => onRelayout('LR')}>Vertical</button>
+      <button className={btn} onClick={() => onRelayout('TB')}>Horizontal</button>
       <button className={btn} onClick={() => onRelayout('RADIAL')}>Radial</button>
     </div>
   );

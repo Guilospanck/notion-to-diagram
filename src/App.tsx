@@ -1,14 +1,7 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import InputForm from '@/components/InputForm';
+import DiagramCanvas from '@/components/DiagramCanvas';
 import ThemeToggle from '@/components/ThemeToggle';
 import type { DiagramData } from '@/types';
-
-const DiagramCanvas = dynamic(() => import('@/components/DiagramCanvas'), {
-  ssr: false,
-});
 
 const STORAGE_KEY = 'notion-to-diagram:saved';
 
@@ -33,28 +26,31 @@ function persistDiagrams(diagrams: SavedDiagram[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(diagrams));
 }
 
-export default function Home() {
+export default function App() {
   const [diagramData, setDiagramData] = useState<DiagramData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState('');
-  const [error, setError] = useState('');
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setSavedDiagrams(loadSavedDiagrams());
   }, []);
 
-  const saveDiagram = useCallback((data: DiagramData) => {
-    const title = data.nodes[0]?.label || 'Untitled';
-    const entry: SavedDiagram = {
-      id: crypto.randomUUID(),
-      title,
-      createdAt: new Date().toISOString(),
-      data,
-    };
-    const updated = [entry, ...loadSavedDiagrams()];
-    persistDiagrams(updated);
-    setSavedDiagrams(updated);
+  // Fetch pre-baked diagram data on mount
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}diagram-data.json`)
+      .then((res) => {
+        if (!res.ok) throw new Error('No diagram data found');
+        return res.json();
+      })
+      .then((data: DiagramData) => {
+        setDiagramData(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+        setError('No pre-built diagram data found. Run the build with NOTION_TOKEN and NOTION_PAGE_ID to generate it.');
+      });
   }, []);
 
   const deleteDiagram = useCallback((id: string) => {
@@ -62,49 +58,6 @@ export default function Home() {
     persistDiagrams(updated);
     setSavedDiagrams(updated);
   }, []);
-
-  const handleSubmit = async (pageUrl: string, token: string) => {
-    setIsLoading(true);
-    setError('');
-    setDiagramData(null);
-
-    try {
-      setLoadingStep('Fetching Notion pages...');
-      const notionRes = await fetch('/api/notion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pageUrl, token }),
-      });
-
-      if (!notionRes.ok) {
-        const err = await notionRes.json();
-        throw new Error(err.error || 'Failed to fetch Notion pages');
-      }
-
-      const tree = await notionRes.json();
-
-      setLoadingStep('Generating diagram...');
-      const generateRes = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tree }),
-      });
-
-      if (!generateRes.ok) {
-        const err = await generateRes.json();
-        throw new Error(err.error || 'Failed to generate diagram');
-      }
-
-      const data: DiagramData = await generateRes.json();
-      saveDiagram(data);
-      setDiagramData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
-      setIsLoading(false);
-      setLoadingStep('');
-    }
-  };
 
   if (diagramData) {
     return (
@@ -136,12 +89,22 @@ export default function Home() {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Notion to Diagram</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
-          Transform your Notion pages into interactive diagrams. Paste a page URL and your integration token to get started.
+          Transform your Notion pages into interactive diagrams.
         </p>
       </div>
-      <InputForm onSubmit={handleSubmit} isLoading={isLoading} loadingStep={loadingStep} />
+
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sm">Loading diagram...</span>
+        </div>
+      )}
+
       {error && (
-        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm max-w-lg">
+        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm max-w-lg">
           {error}
         </div>
       )}
