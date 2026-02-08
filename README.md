@@ -54,6 +54,22 @@ The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) 
 2. Add `NOTION_TOKEN` and `NOTION_PAGE_ID` as repository secrets
 3. Go to **Settings > Pages** and set the source to **GitHub Actions**
 
+### Manual deploy
+
+To trigger a deploy without pushing a commit (e.g. when Notion content has changed):
+
+```bash
+just deploy
+```
+
+## Just recipes
+
+| Recipe | Description |
+|--------|-------------|
+| `just dev` | Start Vite dev server |
+| `just preview` | Fetch data, build, and preview locally |
+| `just deploy` | Trigger GitHub Actions deploy |
+
 ## Features
 
 - Interactive diagram with pan, zoom, and node selection
@@ -61,4 +77,3 @@ The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) 
 - Detail panel with rendered markdown content
 - Internal link navigation between nodes
 - Dark mode with system preference detection
-- Saved diagrams via localStorage
