@@ -1,5 +1,3 @@
-// src/lib/layout.ts
-import dagre from '@dagrejs/dagre';
 import { Position, type Node, type Edge } from '@xyflow/react';
 import type { DiagramData, DiagramNodeType } from '@/types';
 
@@ -14,10 +12,11 @@ export interface LayoutResult {
   edges: Edge[];
 }
 
-export function layoutDiagram(
+export async function layoutDiagram(
   data: DiagramData,
   direction: 'TB' | 'LR' = 'TB',
-): LayoutResult {
+): Promise<LayoutResult> {
+  const dagre = (await import('@dagrejs/dagre')).default;
   const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   const isHorizontal = direction === 'LR';
 

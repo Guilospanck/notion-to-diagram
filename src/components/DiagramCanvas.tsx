@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -9,6 +9,7 @@ import {
   useNodesState,
   useEdgesState,
   type Node,
+  type Edge,
   ReactFlowProvider,
   useReactFlow,
 } from '@xyflow/react';
@@ -22,26 +23,26 @@ import type { DiagramData } from '@/types';
 
 const nodeTypes = { custom: CustomNode };
 
-interface DiagramCanvasInnerProps {
-  diagramData: DiagramData;
-}
-
-function DiagramCanvasInner({ diagramData }: DiagramCanvasInnerProps) {
+function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
   const { fitView } = useReactFlow();
 
-  const initialLayout = useMemo(
-    () => layoutDiagram(diagramData, 'TB'),
-    [diagramData],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialLayout.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialLayout.edges);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<{
     title: string;
     content: string;
   } | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
   const [showReferences, setShowReferences] = useState(true);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    layoutDiagram(diagramData, 'TB').then((result) => {
+      setNodes(result.nodes);
+      setEdges(result.edges);
+      setReady(true);
+    });
+  }, [diagramData, setNodes, setEdges]);
 
   const visibleEdges = useMemo(() => {
     if (showReferences) return edges;
@@ -54,14 +55,22 @@ function DiagramCanvasInner({ diagramData }: DiagramCanvasInnerProps) {
   }, []);
 
   const onRelayout = useCallback(
-    (direction: 'TB' | 'LR') => {
-      const result = layoutDiagram(diagramData, direction);
+    async (direction: 'TB' | 'LR') => {
+      const result = await layoutDiagram(diagramData, direction);
       setNodes(result.nodes);
       setEdges(result.edges);
       setTimeout(() => fitView({ padding: 0.2 }), 50);
     },
     [diagramData, setNodes, setEdges, fitView],
   );
+
+  if (!ready) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-gray-400">
+        Laying out diagram...
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full relative">
