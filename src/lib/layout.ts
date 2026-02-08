@@ -7,49 +7,103 @@ const NODE_DIMENSIONS: Record<DiagramNodeType, { width: number; height: number }
   detail: { width: 150, height: 40 },
 };
 
+const H_GAP = 40;
+const V_GAP = 80;
+
 export interface LayoutResult {
   nodes: Node[];
   edges: Edge[];
 }
 
-export async function layoutDiagram(
-  data: DiagramData,
-  direction: 'TB' | 'LR' = 'TB',
-): Promise<LayoutResult> {
-  const dagre = (await import('@dagrejs/dagre')).default;
-  const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  const isHorizontal = direction === 'LR';
+interface TreeNode {
+  id: string;
+  children: TreeNode[];
+  width: number;
+  height: number;
+  subtreeWidth: number;
+  x: number;
+  y: number;
+}
 
-  g.setGraph({
-    rankdir: direction,
-    nodesep: 60,
-    ranksep: 80,
-    edgesep: 20,
-  });
-
-  for (const node of data.nodes) {
-    const dims = NODE_DIMENSIONS[node.type] || NODE_DIMENSIONS.detail;
-    g.setNode(node.id, { width: dims.width, height: dims.height });
-  }
+function buildTree(data: DiagramData): TreeNode[] {
+  const childMap = new Map<string, string[]>();
+  const hasParent = new Set<string>();
 
   for (const edge of data.edges) {
     if (edge.type === 'hierarchy') {
-      g.setEdge(edge.source, edge.target);
+      if (!childMap.has(edge.source)) childMap.set(edge.source, []);
+      childMap.get(edge.source)!.push(edge.target);
+      hasParent.add(edge.target);
     }
   }
 
-  dagre.layout(g);
+  const nodeTypeMap = new Map(data.nodes.map((n) => [n.id, n.type]));
+
+  function build(id: string): TreeNode {
+    const type = nodeTypeMap.get(id) || 'detail';
+    const dims = NODE_DIMENSIONS[type];
+    const childIds = childMap.get(id) || [];
+    const children = childIds.map(build);
+    const childrenWidth = children.length > 0
+      ? children.reduce((sum, c) => sum + c.subtreeWidth, 0) + (children.length - 1) * H_GAP
+      : 0;
+    return {
+      id,
+      children,
+      width: dims.width,
+      height: dims.height,
+      subtreeWidth: Math.max(dims.width, childrenWidth),
+      x: 0,
+      y: 0,
+    };
+  }
+
+  const roots = data.nodes.filter((n) => !hasParent.has(n.id)).map((n) => n.id);
+  return roots.map(build);
+}
+
+function positionTree(tree: TreeNode, x: number, y: number) {
+  tree.x = x + tree.subtreeWidth / 2 - tree.width / 2;
+  tree.y = y;
+
+  let childX = x;
+  for (const child of tree.children) {
+    positionTree(child, childX, y + tree.height + V_GAP);
+    childX += child.subtreeWidth + H_GAP;
+  }
+}
+
+function collectNodes(tree: TreeNode, nodeMap: Map<string, { x: number; y: number }>) {
+  nodeMap.set(tree.id, { x: tree.x, y: tree.y });
+  for (const child of tree.children) {
+    collectNodes(child, nodeMap);
+  }
+}
+
+export function layoutDiagram(
+  data: DiagramData,
+  direction: 'TB' | 'LR' = 'TB',
+): LayoutResult {
+  const isHorizontal = direction === 'LR';
+  const trees = buildTree(data);
+
+  let offsetX = 0;
+  for (const tree of trees) {
+    positionTree(tree, offsetX, 0);
+    offsetX += tree.subtreeWidth + H_GAP * 2;
+  }
+
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const tree of trees) {
+    collectNodes(tree, positions);
+  }
 
   const nodes: Node[] = data.nodes.map((node) => {
-    const pos = g.node(node.id);
-    const dims = NODE_DIMENSIONS[node.type] || NODE_DIMENSIONS.detail;
+    const pos = positions.get(node.id) || { x: 0, y: 0 };
     return {
       id: node.id,
       type: 'custom',
-      position: {
-        x: pos.x - dims.width / 2,
-        y: pos.y - dims.height / 2,
-      },
+      position: isHorizontal ? { x: pos.y, y: pos.x } : pos,
       data: {
         label: node.label,
         fullContent: node.fullContent,
