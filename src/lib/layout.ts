@@ -1,6 +1,6 @@
 // src/lib/layout.ts
 import dagre from '@dagrejs/dagre';
-import type { Node, Edge } from '@xyflow/react';
+import { Position, type Node, type Edge } from '@xyflow/react';
 import type { DiagramData, DiagramNodeType } from '@/types';
 
 const NODE_DIMENSIONS: Record<DiagramNodeType, { width: number; height: number }> = {
@@ -59,8 +59,8 @@ export function layoutDiagram(
           (e) => e.source === node.id && e.type === 'hierarchy',
         ),
       },
-      targetPosition: isHorizontal ? 'left' : 'top',
-      sourcePosition: isHorizontal ? 'right' : 'bottom',
+      targetPosition: isHorizontal ? Position.Left : Position.Top,
+      sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
     };
   });
 
