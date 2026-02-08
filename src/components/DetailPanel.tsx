@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface DetailPanelProps {
   title: string;
@@ -79,7 +80,7 @@ export default function DetailPanel({ title, content, onClose, onNavigateToNode 
       </div>
       <div className="flex-1 overflow-y-auto p-4 prose prose-sm max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-1.5 prose-li:my-0.5 prose-pre:my-2 prose-pre:bg-transparent prose-pre:p-0">
         {content ? (
-          <ReactMarkdown components={components}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{content}</ReactMarkdown>
         ) : (
           <p className="text-gray-400 italic">No content for this node.</p>
         )}
