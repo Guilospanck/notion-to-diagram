@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { enrichWithAI } from '@/lib/ai';
+import { generateDiagram } from '@/lib/ai';
 import type { NotionTree } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const diagramData = await enrichWithAI(tree);
+    const diagramData = generateDiagram(tree);
     return NextResponse.json(diagramData);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

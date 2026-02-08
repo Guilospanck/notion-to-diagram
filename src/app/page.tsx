@@ -35,7 +35,7 @@ export default function Home() {
 
       const tree = await notionRes.json();
 
-      setLoadingStep('Analyzing content with AI...');
+      setLoadingStep('Generating diagram...');
       const generateRes = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,8 +48,6 @@ export default function Home() {
       }
 
       const data: DiagramData = await generateRes.json();
-
-      setLoadingStep('Generating diagram...');
       setDiagramData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
