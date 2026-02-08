@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npx tsx scripts/prebuild.ts",
-    "build": "npm run prebuild && tsc -b && vite build",
+    "fetch-data": "npx tsx scripts/prebuild.ts",
+    "build": "npm run fetch-data && tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
