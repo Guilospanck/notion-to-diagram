@@ -15,7 +15,7 @@ function getNodeType(
   return 'detail';
 }
 
-function truncateLabel(title: string, maxWords: number = 6): string {
+function truncateLabel(title: string, maxWords: number = 10): string {
   const words = title.split(/\s+/);
   if (words.length <= maxWords) return title;
   return words.slice(0, maxWords).join(' ') + '...';
@@ -32,7 +32,7 @@ export function generateDiagram(tree: NotionTree): DiagramData {
     nodes.push({
       id: node.id,
       label: truncateLabel(node.title),
-      fullContent: node.title + (node.content ? '\n\n' + node.content : ''),
+      fullContent: node.content || '',
       type: getNodeType(node, depth),
       suggestedLinks: [],
     });

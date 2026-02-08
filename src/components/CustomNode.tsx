@@ -8,25 +8,44 @@ type CustomNodeData = {
   fullContent: string;
   nodeType: 'topic' | 'subtopic' | 'detail';
   hasChildren: boolean;
+  selected: boolean;
 };
 
 const typeStyles = {
-  topic: 'bg-blue-600 text-white border-blue-700 text-base font-semibold min-w-[200px]',
-  subtopic: 'bg-blue-100 text-blue-900 border-blue-300 text-sm font-medium min-w-[160px]',
-  detail: 'bg-gray-50 text-gray-700 border-gray-300 text-xs min-w-[130px]',
+  topic: 'bg-blue-600 text-white border-blue-700 text-sm font-semibold',
+  subtopic: 'bg-blue-100 text-blue-900 border-blue-300 text-xs font-medium',
+  detail: 'bg-gray-50 text-gray-700 border-gray-300 text-xs',
 };
 
+function contentPreview(content: string): string {
+  if (!content) return '';
+  const plain = content
+    .replace(/[*_~`#>\[\]()]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+  if (plain.length <= 60) return plain;
+  return plain.slice(0, 60) + '...';
+}
+
 function CustomNode({ data }: NodeProps) {
-  const { label, nodeType } = data as unknown as CustomNodeData;
+  const { label, fullContent, nodeType, selected } = data as unknown as CustomNodeData;
   const style = typeStyles[nodeType] || typeStyles.detail;
+  const preview = contentPreview(fullContent);
 
   return (
     <div
-      className={`px-4 py-2 rounded-lg border-2 shadow-sm cursor-pointer
-        hover:shadow-md transition-shadow text-center ${style}`}
+      className={`px-3 py-2 rounded-lg border-2 shadow-sm cursor-pointer
+        hover:shadow-md transition-all ${style}
+        ${selected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-105' : ''}`}
+      style={{ maxWidth: 260, minWidth: 120 }}
     >
       <Handle type="target" position={Position.Top} className="!bg-gray-400" />
-      <div className="truncate max-w-[200px]">{label}</div>
+      <div className="leading-tight">{label}</div>
+      {preview && nodeType !== 'topic' && (
+        <div className="mt-1 opacity-60 text-[10px] leading-snug line-clamp-2">
+          {preview}
+        </div>
+      )}
       <Handle type="source" position={Position.Bottom} className="!bg-gray-400" />
     </div>
   );

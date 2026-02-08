@@ -23,7 +23,7 @@ import type { DiagramData } from '@/types';
 const nodeTypes = { custom: CustomNode };
 
 function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
-  const { fitView } = useReactFlow();
+  const { fitView, setCenter, getNode } = useReactFlow();
 
   const initialLayout = useMemo(
     () => layoutDiagram(diagramData, 'TB'),
@@ -32,21 +32,34 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialLayout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialLayout.edges);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<{
     title: string;
     content: string;
   } | null>(null);
   const [showMinimap, setShowMinimap] = useState(true);
-  const [showReferences, setShowReferences] = useState(true);
 
-  const visibleEdges = useMemo(() => {
-    if (showReferences) return edges;
-    return edges.filter((e) => !e.animated);
-  }, [edges, showReferences]);
+  const selectNode = useCallback((nodeId: string) => {
+    const rfNode = getNode(nodeId);
+    if (!rfNode) return;
+    const data = rfNode.data as { label: string; fullContent: string };
+    setSelectedNodeId(nodeId);
+    setSelectedNode({ title: data.label, content: data.fullContent });
+    // Center viewport on the node
+    setCenter(
+      rfNode.position.x + (rfNode.measured?.width ?? 200) / 2,
+      rfNode.position.y + (rfNode.measured?.height ?? 50) / 2,
+      { zoom: 1.2, duration: 400 },
+    );
+  }, [getNode, setCenter]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    const data = node.data as { label: string; fullContent: string };
-    setSelectedNode({ title: data.label, content: data.fullContent });
+    selectNode(node.id);
+  }, [selectNode]);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+    setSelectedNode(null);
   }, []);
 
   const onRelayout = useCallback(
@@ -59,14 +72,24 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
     [diagramData, setNodes, setEdges, fitView],
   );
 
+  // Mark selected node in data so CustomNode can highlight it
+  const styledNodes = useMemo(() =>
+    nodes.map((n) => ({
+      ...n,
+      data: { ...n.data, selected: n.id === selectedNodeId },
+    })),
+    [nodes, selectedNodeId],
+  );
+
   return (
     <div className="w-full h-full relative">
       <ReactFlow
-        nodes={nodes}
-        edges={visibleEdges}
+        nodes={styledNodes}
+        edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
@@ -79,10 +102,8 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
           <Toolbar
             onFitView={() => fitView({ padding: 0.2 })}
             onToggleMinimap={() => setShowMinimap((v) => !v)}
-            onToggleReferences={() => setShowReferences((v) => !v)}
             onRelayout={onRelayout}
             showMinimap={showMinimap}
-            showReferences={showReferences}
           />
         </Panel>
       </ReactFlow>
@@ -90,7 +111,11 @@ function DiagramCanvasInner({ diagramData }: { diagramData: DiagramData }) {
         <DetailPanel
           title={selectedNode.title}
           content={selectedNode.content}
-          onClose={() => setSelectedNode(null)}
+          onClose={() => {
+            setSelectedNodeId(null);
+            setSelectedNode(null);
+          }}
+          onNavigateToNode={selectNode}
         />
       )}
     </div>

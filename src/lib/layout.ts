@@ -2,13 +2,13 @@ import { Position, type Node, type Edge } from '@xyflow/react';
 import type { DiagramData, DiagramNodeType } from '@/types';
 
 const NODE_DIMENSIONS: Record<DiagramNodeType, { width: number; height: number }> = {
-  topic: { width: 220, height: 60 },
-  subtopic: { width: 180, height: 50 },
-  detail: { width: 150, height: 40 },
+  topic: { width: 260, height: 50 },
+  subtopic: { width: 240, height: 60 },
+  detail: { width: 220, height: 55 },
 };
 
-const H_GAP = 40;
-const V_GAP = 80;
+const H_GAP = 50;
+const V_GAP = 60;
 
 export interface LayoutResult {
   nodes: Node[];
