@@ -58,7 +58,24 @@ export async function normalizeNotionPage(
     };
 
     const contentParts: string[] = [];
-    let currentHeadingId: string | null = null;
+    // Track the most recent heading at each level (1, 2, 3)
+    const headingByLevel: Record<number, string> = {};
+
+    function currentDeepestHeading(): string | null {
+      for (let l = 3; l >= 1; l--) {
+        if (headingByLevel[l]) return headingByLevel[l];
+      }
+      return null;
+    }
+
+    function appendContent(text: string) {
+      const headingId = currentDeepestHeading();
+      if (headingId && nodes[headingId]) {
+        nodes[headingId].content += (nodes[headingId].content ? '\n' : '') + text;
+      } else {
+        contentParts.push(text);
+      }
+    }
 
     for (const block of blocks) {
       if (block.type === 'child_page') {
@@ -94,33 +111,43 @@ export async function normalizeNotionPage(
       if (isHeading(block)) {
         const headingText = extractTextFromBlock(block);
         const level = headingLevel(block);
+
+        // Find parent: nearest heading with a lower level, or the page itself
+        let parentNodeId = pageId;
+        for (let l = level - 1; l >= 1; l--) {
+          if (headingByLevel[l]) {
+            parentNodeId = headingByLevel[l];
+            break;
+          }
+        }
+
         const headingNode: NotionNode = {
           id: block.id,
           title: headingText,
           content: '',
           type: 'heading',
           children: [],
-          parentId: currentHeadingId && level > 1 ? currentHeadingId : pageId,
+          parentId: parentNodeId,
         };
         nodes[block.id] = headingNode;
 
-        if (currentHeadingId && level > 1) {
-          nodes[currentHeadingId]?.children.push(block.id);
-        } else {
+        if (parentNodeId === pageId) {
           pageNode.children.push(block.id);
+        } else {
+          nodes[parentNodeId]?.children.push(block.id);
         }
 
-        currentHeadingId = block.id;
+        // Update stack: set this level, clear all deeper levels
+        headingByLevel[level] = block.id;
+        for (let l = level + 1; l <= 3; l++) {
+          delete headingByLevel[l];
+        }
         continue;
       }
 
       const text = extractTextFromBlock(block);
       if (text) {
-        if (currentHeadingId && nodes[currentHeadingId]) {
-          nodes[currentHeadingId].content += (nodes[currentHeadingId].content ? '\n' : '') + text;
-        } else {
-          contentParts.push(text);
-        }
+        appendContent(text);
       }
 
       if (block.has_children && !['child_page', 'child_database'].includes(block.type)) {
@@ -128,11 +155,7 @@ export async function normalizeNotionPage(
         for (const child of childBlocks) {
           const childText = extractTextFromBlock(child);
           if (childText) {
-            if (currentHeadingId && nodes[currentHeadingId]) {
-              nodes[currentHeadingId].content += '\n' + childText;
-            } else {
-              contentParts.push(childText);
-            }
+            appendContent(childText);
           }
         }
       }
