@@ -1,10 +1,52 @@
-// src/lib/ai.ts
 import Anthropic from '@anthropic-ai/sdk';
-import type { NotionTree, DiagramData } from '@/types';
+import type { NotionTree, DiagramData, DiagramNode, DiagramEdge, DiagramNodeType } from '@/types';
 
-const anthropic = new Anthropic();
+export function generateRuleBased(tree: NotionTree): DiagramData {
+  const nodes: DiagramNode[] = [];
+  const edges: DiagramEdge[] = [];
+
+  function getNodeType(node: { type: string; children: string[] }, depth: number): DiagramNodeType {
+    if (depth === 0) return 'topic';
+    if (node.children.length > 0 || node.type === 'page') return 'subtopic';
+    return 'detail';
+  }
+
+  function truncateLabel(title: string, maxWords: number = 6): string {
+    const words = title.split(/\s+/);
+    if (words.length <= maxWords) return title;
+    return words.slice(0, maxWords).join(' ') + '...';
+  }
+
+  function walk(nodeId: string, depth: number) {
+    const node = tree.nodes[nodeId];
+    if (!node) return;
+
+    nodes.push({
+      id: node.id,
+      label: truncateLabel(node.title),
+      fullContent: node.title + (node.content ? '\n\n' + node.content : ''),
+      type: getNodeType(node, depth),
+      suggestedLinks: [],
+    });
+
+    for (const childId of node.children) {
+      edges.push({ source: node.id, target: childId, type: 'hierarchy' });
+      walk(childId, depth + 1);
+    }
+  }
+
+  walk(tree.rootId, 0);
+
+  return { nodes, edges };
+}
 
 export async function enrichWithAI(tree: NotionTree): Promise<DiagramData> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return generateRuleBased(tree);
+  }
+
+  const anthropic = new Anthropic();
+
   const nodeDescriptions = Object.values(tree.nodes).map((node) => ({
     id: node.id,
     title: node.title,
