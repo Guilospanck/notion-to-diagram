@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notion to Diagram
+
+Transform Notion pages into interactive diagrams. Built with Vite, React, and React Flow.
+
+Notion content is fetched at build time and baked into the static output as a JSON file. The app renders it as an interactive, navigable diagram with multiple layout options.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- A [Notion integration token](https://www.notion.so/my-integrations) and a page ID (optional for dev, required for build with data)
+
+### Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Opens at http://localhost:5173. Without Notion credentials, the app loads but shows no diagram data.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building with Notion data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NOTION_TOKEN=secret_xxx NOTION_PAGE_ID=your-page-id npm run build
+```
 
-## Learn More
+This runs the prebuild script to fetch your Notion page, then builds the static site into `dist/`.
 
-To learn more about Next.js, take a look at the following resources:
+### Preview
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run preview
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Serves the built `dist/` folder locally.
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds and deploys to GitHub Pages on every push to `main`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Setup
+
+1. In your GitHub repo, go to **Settings > Secrets and variables > Actions**
+2. Add `NOTION_TOKEN` and `NOTION_PAGE_ID` as repository secrets
+3. Go to **Settings > Pages** and set the source to **GitHub Actions**
+
+## Features
+
+- Interactive diagram with pan, zoom, and node selection
+- Multiple layouts: vertical, horizontal, and radial
+- Detail panel with rendered markdown content
+- Internal link navigation between nodes
+- Dark mode with system preference detection
+- Saved diagrams via localStorage
