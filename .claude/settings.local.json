@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:reactflow.dev)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(npm install:*)",
+      "Bash(git -C /Users/guilospanck/repos/MyRepositories/notion-to-diagram add -A)",
+      "Bash(git -C /Users/guilospanck/repos/MyRepositories/notion-to-diagram commit -m \"$\\(cat <<''EOF''\nchore: scaffold Next.js project with dependencies\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
