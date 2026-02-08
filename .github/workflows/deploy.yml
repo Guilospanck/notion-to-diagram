@@ -24,7 +24,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-          VITE_BASE_PATH: /notion-to-diagram
+          VITE_BASE_PATH: /notion-to-diagram/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
