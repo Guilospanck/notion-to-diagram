@@ -40,11 +40,17 @@ export function generateRuleBased(tree: NotionTree): DiagramData {
   return { nodes, edges };
 }
 
+function hasValidApiKey(): boolean {
+  const key = process.env.ANTHROPIC_API_KEY;
+  return !!key && key !== 'your-anthropic-api-key-here' && key.startsWith('sk-ant-');
+}
+
 export async function enrichWithAI(tree: NotionTree): Promise<DiagramData> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!hasValidApiKey()) {
     return generateRuleBased(tree);
   }
 
+  try {
   const anthropic = new Anthropic();
 
   const nodeDescriptions = Object.values(tree.nodes).map((node) => ({
@@ -109,4 +115,8 @@ Return ONLY valid JSON matching this exact schema, with no other text:
 
   const data: DiagramData = JSON.parse(jsonMatch[0]);
   return data;
+  } catch {
+    // Fall back to rule-based if AI call fails (auth error, rate limit, etc.)
+    return generateRuleBased(tree);
+  }
 }
